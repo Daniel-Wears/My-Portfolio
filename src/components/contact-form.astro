@@ -1,0 +1,114 @@
+---
+// src/components/ContactForm.astro
+interface Props {
+  endpoint?: string;
+}
+const { endpoint = 'SECRET' } = Astro.props;
+---
+
+<div class="not-content">
+  <form action={endpoint} method="POST" class="contact-form">
+    <label>
+      Name
+      <input type="text" name="name" required placeholder="Your name" />
+    </label>
+
+    <label>
+      Email
+      <input type="email" name="email" required placeholder="your.email@example.com" />
+    </label>
+
+    <label>
+      Message
+      <textarea name="message" rows="4" required placeholder="Send me A message!"></textarea>
+    </label>
+
+    <input type="text" name="spam_prevention" class="hidden" tabindex="-1" autocomplete="off" />
+
+    <button type="submit">Send Message</button>
+    <p class="status" aria-live="polite"></p>
+  </form>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLFormElement>('form.contact-form').forEach((form) => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = form.querySelector('.status')!;
+      const btn = form.querySelector('button')!;
+      const data = new FormData(form);
+
+      if (data.get('spam_prevention')) return;
+
+      btn.disabled = true;
+      status.textContent = 'Sending...';
+      status.className = 'status';
+
+      try {
+        const res = await fetch(form.action, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          body: data,
+        });
+
+        if (!res.ok) throw new Error();
+        status.textContent = 'Message sent successfully!';
+        status.classList.add('ok');
+        form.reset();
+      } catch {
+        status.textContent = 'Failed to send. Please try again.';
+        status.classList.add('err');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+</script>
+
+<style>
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 480px;
+    margin-top: 1rem;
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--sl-color-white, #fff);
+  }
+
+  input, textarea {
+    padding: 0.65rem 0.8rem;
+    border-radius: 6px;
+    border: 1px solid var(--sl-color-gray-5, #374151);
+    background: var(--sl-color-gray-6, #1f2937);
+    color: inherit;
+    font-family: inherit;
+  }
+
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--sl-color-accent, #3b82f6);
+  }
+
+  button {
+    padding: 0.7rem;
+    border-radius: 6px;
+    border: none;
+    background: var(--sl-color-accent, #3b82f6);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .hidden { display: none; }
+  .status.ok { color: #10b981; }
+  .status.err { color: #ef4444; }
+</style>
