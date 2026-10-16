@@ -7,7 +7,8 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "deploy": "astro build && scp -r dist/* root@geeknas.local:/mnt/user/appdata/daniels-website/html/"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.42.0",

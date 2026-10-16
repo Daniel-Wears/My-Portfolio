@@ -3,7 +3,7 @@
 interface Props {
   endpoint?: string;
 }
-const { endpoint = 'SECRET' } = Astro.props;
+const { endpoint = 'https://api.danielwears.uk' } = Astro.props;
 ---
 
 <div class="not-content">
@@ -56,7 +56,7 @@ const { endpoint = 'SECRET' } = Astro.props;
         status.classList.add('ok');
         form.reset();
       } catch {
-        status.textContent = 'Failed to send. Please try again.';
+        status.textContent = 'Failed to send. Please try again later.';
         status.classList.add('err');
       } finally {
         btn.disabled = false;
