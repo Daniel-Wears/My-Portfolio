@@ -1,0 +1,208 @@
+---
+interface Props {
+	owner: string;
+	repo: string;
+	limit?: number;
+}
+
+interface Commit {
+	sha: string;
+	html_url: string;
+	commit: {
+		message: string;
+		author: {
+			date: string;
+		} | null;
+	};
+}
+
+const { owner, repo, limit = 100 } = Astro.props;
+const commitLimit = Math.min(Math.max(limit, 1), 100);
+const commitsUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/commits?per_page=${commitLimit}`;
+
+let commits: Commit[] = [];
+let error = '';
+
+try {
+	const response = await fetch(commitsUrl, {
+		headers: {
+			Accept: 'application/vnd.github+json',
+		},
+	});
+
+	if (!response.ok) {
+		throw new Error(`GitHub returned ${response.status}`);
+	}
+
+	commits = await response.json() as Commit[];
+} catch {
+	error = 'Unable to load commit history right now.';
+}
+---
+
+<div class="commit-timeline" aria-label={`Commit history for ${owner}/${repo}`}>
+	{error ? (
+		<p class="commit-timeline__message">{error}</p>
+	) : commits.length === 0 ? (
+		<p class="commit-timeline__message">No commits found.</p>
+	) : (
+		<ol class="commit-timeline__list">
+			{commits.map((item, index) => {
+				const [title, ...details] = item.commit.message.split('\n');
+				const date = item.commit.author?.date
+					? new Date(item.commit.author.date).toLocaleDateString(undefined, {
+							year: 'numeric',
+							month: 'short',
+							day: 'numeric',
+						})
+					: 'Unknown date';
+
+				return (
+					<li class={`commit-timeline__item${index % 2 === 1 ? ' commit-timeline__item--right' : ''}`}>
+						<span class="commit-timeline__marker" aria-hidden="true"></span>
+						<a class="commit-timeline__card" href={item.html_url} target="_blank" rel="noreferrer">
+							<time datetime={item.commit.author?.date}>{date}</time>
+							<h2>{title}</h2>
+							{details.length > 0 && <p>{details.join(' ')}</p>}
+						</a>
+					</li>
+				);
+			})}
+		</ol>
+	)}
+</div>
+
+<style>
+	.commit-timeline {
+		--timeline-line: var(--sl-color-gray-5, #475569);
+		--timeline-accent: var(--sl-color-accent, #7dd3fc);
+		margin: 2rem 0;
+	}
+
+	.commit-timeline__list {
+		position: relative;
+		display: grid;
+		gap: 2rem;
+		margin: 0;
+		padding: 1rem 0;
+		list-style: none;
+	}
+
+	.commit-timeline__list::before {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 50%;
+		width: 2px;
+		content: '';
+		background: var(--timeline-line);
+		transform: translateX(-50%);
+	}
+
+	.commit-timeline__item {
+		position: relative;
+		display: flex;
+		justify-content: flex-start;
+		width: 50%;
+		padding-right: 2rem;
+	}
+
+	.commit-timeline__item--right {
+		justify-self: end;
+		justify-content: flex-end;
+		padding-right: 0;
+		padding-left: 2rem;
+	}
+
+	.commit-timeline__marker {
+		position: absolute;
+		top: 1.5rem;
+		right: -0.45rem;
+		z-index: 1;
+		width: 0.9rem;
+		height: 0.9rem;
+		border: 3px solid var(--sl-color-bg, #0f172a);
+		border-radius: 50%;
+		background: var(--timeline-accent);
+		box-shadow: 0 0 0 2px var(--timeline-accent);
+	}
+
+	.commit-timeline__item--right .commit-timeline__marker {
+		right: auto;
+		left: -0.45rem;
+	}
+
+	.commit-timeline__card {
+		display: block;
+		width: min(100%, 30rem);
+		padding: 1.25rem;
+		border: 1px solid var(--sl-color-gray-5, #475569);
+		border-radius: 8px;
+		background: var(--sl-color-gray-6, #1e293b);
+		box-shadow: 0 0.75rem 1.5rem rgb(0 0 0 / 12%);
+		color: inherit;
+		text-decoration: none;
+		transition: border-color 150ms ease, transform 150ms ease;
+	}
+
+	.commit-timeline__card:hover,
+	.commit-timeline__card:focus-visible {
+		border-color: var(--timeline-accent);
+		transform: translateY(-2px);
+	}
+
+	.commit-timeline__card time {
+		display: block;
+		margin-bottom: 0.5rem;
+		color: var(--timeline-accent);
+		font-size: 0.9rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+	}
+
+	.commit-timeline__card h2 {
+		margin: 0;
+		color: var(--sl-color-white, #fff);
+		font-size: 1rem;
+		line-height: 1.4;
+	}
+
+	.commit-timeline__card p {
+		margin: 0.75rem 0 0;
+		color: var(--sl-color-gray-2, #cbd5e1);
+		font-size: 0.9rem;
+		line-height: 1.5;
+		white-space: pre-wrap;
+	}
+
+	.commit-timeline__message {
+		padding: 1rem;
+		border: 1px solid var(--sl-color-gray-5, #475569);
+		border-radius: 8px;
+	}
+
+	@media (max-width: 640px) {
+		.commit-timeline__list {
+			gap: 1.5rem;
+		}
+
+		.commit-timeline__list::before {
+			left: 0.45rem;
+		}
+
+		.commit-timeline__item,
+		.commit-timeline__item--right {
+			justify-self: stretch;
+			width: 100%;
+			padding-right: 0;
+			padding-left: 2rem;
+		}
+
+		.commit-timeline__marker,
+		.commit-timeline__item--right .commit-timeline__marker {
+			right: auto;
+			left: 0;
+		}
+	}
+</style>
