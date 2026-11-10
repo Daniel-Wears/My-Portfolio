@@ -4,6 +4,14 @@ description: About This Website!
 tableOfContents: false
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
 import CommitTimeline from '../../../components/commit-timeline.astro';
 
-<CommitTimeline owner="Daniel-Wears" repo="My-Portfolio" limit={100} />
+<Tabs>
+  <TabItem label="About" icon="document">
+    Test
+  </TabItem>
+  <TabItem label="Commit Timeline" icon="code-branch">
+    <CommitTimeline owner="Daniel-Wears" repo="My-Portfolio" limit={100} />
+  </TabItem>
+</Tabs>
